@@ -33,6 +33,21 @@ def browse_folder(entry):
         entry.delete(0, ctk.END)
         entry.insert(0, folder_path)
 
+def delete_empty_folders(path):
+    while True:
+        empty_folders_found = False
+
+        for root, dirs, files in os.walk(path, topdown=False):
+            if not dirs and not files:
+                print(f"Deleting empty folder: {root}")
+                os.rmdir(root)
+                empty_folders_found = True
+            else:
+                print(f"Not empty, skipping: {root}")
+
+        if not empty_folders_found:
+            break 
+
 def run_script():
     src = src_entry.get()
     dest = dest_entry.get()
@@ -41,35 +56,40 @@ def run_script():
     status_label.configure(text="Files moved successfully!")
     save_settings({"src_directory": src, "dest_directory": dest, "search_term": term})
 
-# Set up the main application window
+# Window
 root = ctk.CTk()
 root.title("Sample Sort")
 
-# Load settings
+#  Load Settings
 settings = load_settings()
 
-# Create and place widgets
-ctk.CTkLabel(root, text="Source Directory:").pack()
-src_entry = ctk.CTkEntry(root, width=400)
+# Main frame to hold widgets
+main_frame = ctk.CTkFrame(root)
+main_frame.pack(padx=5, pady=5) 
+
+# Create and place widgets inside the main_frame instead of root
+ctk.CTkLabel(main_frame, text="Source Directory:").pack(pady=(10, 0))
+src_entry = ctk.CTkEntry(main_frame, width=400)
 src_entry.insert(0, settings["src_directory"])
-src_entry.pack()
-ctk.CTkButton(root, text="Browse", command=lambda: browse_folder(src_entry)).pack()
+src_entry.pack(padx=5, pady=(1, 5))
+ctk.CTkButton(main_frame, text="Browse", command=lambda: browse_folder(src_entry)).pack(pady=5)
 
-ctk.CTkLabel(root, text="Destination Directory:").pack()
-dest_entry = ctk.CTkEntry(root, width=400)
+ctk.CTkLabel(main_frame, text="Destination Directory:").pack()
+dest_entry = ctk.CTkEntry(main_frame, width=400)
 dest_entry.insert(0, settings["dest_directory"])
-dest_entry.pack()
-ctk.CTkButton(root, text="Browse", command=lambda: browse_folder(dest_entry)).pack()
+dest_entry.pack(padx=5, pady=5)
+ctk.CTkButton(main_frame, text="Browse", command=lambda: browse_folder(dest_entry)).pack(pady=5)
 
-ctk.CTkLabel(root, text="Search Term:").pack()
-term_entry = ctk.CTkEntry(root, width=200)
+ctk.CTkLabel(main_frame, text="Search Term:").pack()
+term_entry = ctk.CTkEntry(main_frame, width=200)
 term_entry.insert(0, settings["search_term"])
-term_entry.pack()
+term_entry.pack(pady=5)
 
-ctk.CTkButton(root, text="Move Files", command=run_script).pack()
+ctk.CTkButton(main_frame, text="Move Files", command=run_script).pack(pady=5)
+ctk.CTkButton(main_frame, text="Delete Empty Folders", command=lambda: delete_empty_folders(dest_entry.get())).pack(pady=(5,10))
 
-status_label = ctk.CTkLabel(root, text="")
-status_label.pack()
+status_label = ctk.CTkLabel(main_frame, text="")
+status_label.pack(pady=5)
 
 # Start the GUI event loop
 root.mainloop()
