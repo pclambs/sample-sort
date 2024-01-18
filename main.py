@@ -8,16 +8,29 @@ file_move_history = []
 
 def find_and_move_files(src_dir, dest_dir, search_term):                
     if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir)
+        try:
+            os.makedirs(dest_dir)
+        except OSError as e:
+            print(f"Error creating destination directory: {dest_dir}, {e}")
+            status_label.configure(text=f"Error: {e}")
+            return
 
     for root, dirs, files in os.walk(src_dir):
         for file in files:
             if search_term.lower() in file.lower():
                 src_file_path = os.path.join(root, file)
+                if not os.path.exists(src_file_path):
+                    print(f"Source file does not exist: {src_file_path}")
+                    continue
+
                 dest_file_path = os.path.join(dest_dir, file)
-                shutil.move(src_file_path, dest_file_path)
-                file_move_history.append((dest_file_path, src_file_path))
-                print(f"Moved: {src_file_path} -> {dest_file_path}")
+                try:
+                    shutil.move(src_file_path, dest_file_path)
+                    file_move_history.append((dest_file_path, src_file_path))
+                    print(f"Moved: {src_file_path} -> {dest_file_path}")
+                except OSError as e:
+                    print(f"Error moving file {src_file_path}. {e}")
+                    status_label.configure(text=f"Error: {e}")
 
 def save_settings(settings):
     with open('settings.json', 'w') as f:
@@ -42,30 +55,44 @@ def delete_empty_folders(path):
 
         for root, dirs, files in os.walk(path, topdown=False):
             if not dirs and not files:
-                print(f"Deleting empty folder: {root}")
-                os.rmdir(root)
-                file_move_history.append((None, root))
-                empty_folders_found = True
-            else:
-                print(f"Not empty, skipping: {root}")
-
+                try:
+                    os.rmdir(root)  
+                    file_move_history.append((None, root))
+                    empty_folders_found = True
+                    print(f"Deleting empty folder: {root}")
+                except OSError as e:
+                    print(f"Error deleting folder: {root}, {e}")
+                    status_label.configure(text=f"Error: {e}")
         if not empty_folders_found:
-            break 
+                status_label.configure(text=f"Deleted: empty folders")
+                break
 
 def undo_last_move():
     if file_move_history:
         last_move = file_move_history.pop()
         if last_move[0] is None:
-            os.makedirs(last_move[1])
-            print(f"Created folder: {last_move[1]}")
-            status_label.configure(text="Last folder deletion undone!")
+            try:
+                if not os.path.exists(last_move[1]):
+                    os.makedirs(last_move[1])
+                    print(f"Created folder: {last_move[1]}")
+                    status_label.configure(text="Undo: last folder deletion")
+                else:
+                    print(f"Folder already exists: {last_move[1]}")
+                    status_label.configure(text="Folder already exists")
+            except OSError as e:
+                print(f"Error creating folder: {last_move[1]}, {e}")
+                status_label.configure(text=f"Error: {e}")
         else:
             dest_file_path, src_file_path = last_move
-            shutil.move(dest_file_path, src_file_path)
-            print(f"Moved: {dest_file_path} -> {src_file_path}")
-            status_label.configure(text="Last move undone!")
+            try:
+                shutil.move(dest_file_path, src_file_path)
+                print(f"Moved: {dest_file_path} -> {src_file_path}")
+                status_label.configure(text="Undo: last file move")
+            except OSError as e:
+                print(f"Error moving file: {dest_file_path}, {e}")
+                status_label.configure(text=f"Error: {e}")
     else:
-        status_label.configure(text="No moves to undo!")
+        status_label.configure(text="No move history")
 
 def run_script():
     src = src_entry.get()
