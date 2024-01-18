@@ -44,6 +44,7 @@ def delete_empty_folders(path):
             if not dirs and not files:
                 print(f"Deleting empty folder: {root}")
                 os.rmdir(root)
+                file_move_history.append((None, root))
                 empty_folders_found = True
             else:
                 print(f"Not empty, skipping: {root}")
@@ -54,10 +55,15 @@ def delete_empty_folders(path):
 def undo_last_move():
     if file_move_history:
         last_move = file_move_history.pop()
-        dest_file_path, src_file_path = last_move
-        shutil.move(dest_file_path, src_file_path)
-        print(f"Moved: {dest_file_path} -> {src_file_path}")
-        status_label.configure(text="Last move undone!")
+        if last_move[0] is None:
+            os.makedirs(last_move[1])
+            print(f"Created folder: {last_move[1]}")
+            status_label.configure(text="Last folder deletion undone!")
+        else:
+            dest_file_path, src_file_path = last_move
+            shutil.move(dest_file_path, src_file_path)
+            print(f"Moved: {dest_file_path} -> {src_file_path}")
+            status_label.configure(text="Last move undone!")
     else:
         status_label.configure(text="No moves to undo!")
 
