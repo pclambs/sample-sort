@@ -4,6 +4,8 @@ import os
 import shutil
 import json
 
+file_move_history = []
+
 def find_and_move_files(src_dir, dest_dir, search_term):                
     if not os.path.exists(dest_dir):
         os.makedirs(dest_dir)
@@ -14,6 +16,7 @@ def find_and_move_files(src_dir, dest_dir, search_term):
                 src_file_path = os.path.join(root, file)
                 dest_file_path = os.path.join(dest_dir, file)
                 shutil.move(src_file_path, dest_file_path)
+                file_move_history.append((dest_file_path, src_file_path))
                 print(f"Moved: {src_file_path} -> {dest_file_path}")
 
 def save_settings(settings):
@@ -48,6 +51,16 @@ def delete_empty_folders(path):
         if not empty_folders_found:
             break 
 
+def undo_last_move():
+    if file_move_history:
+        last_move = file_move_history.pop()
+        dest_file_path, src_file_path = last_move
+        shutil.move(dest_file_path, src_file_path)
+        print(f"Moved: {dest_file_path} -> {src_file_path}")
+        status_label.configure(text="Last move undone!")
+    else:
+        status_label.configure(text="No moves to undo!")
+
 def run_script():
     src = src_entry.get()
     dest = dest_entry.get()
@@ -67,7 +80,6 @@ settings = load_settings()
 main_frame = ctk.CTkFrame(root)
 main_frame.pack(padx=5, pady=5) 
 
-# Create and place widgets inside the main_frame instead of root
 ctk.CTkLabel(main_frame, text="Source Directory:").pack(pady=(10, 0))
 src_entry = ctk.CTkEntry(main_frame, width=400)
 src_entry.insert(0, settings["src_directory"])
@@ -86,10 +98,16 @@ term_entry.insert(0, settings["search_term"])
 term_entry.pack(pady=5)
 
 ctk.CTkButton(main_frame, text="Move Files", command=run_script).pack(pady=5)
-ctk.CTkButton(main_frame, text="Delete Empty Folders", command=lambda: delete_empty_folders(dest_entry.get())).pack(pady=(5,10))
+ctk.CTkButton(main_frame, text="Delete Empty Folders", command=lambda: delete_empty_folders(src_entry.get())).pack(pady=(5,5))
+ctk.CTkButton(main_frame, text="Undo Last Move", command=undo_last_move).pack(pady=5)
 
 status_label = ctk.CTkLabel(main_frame, text="")
 status_label.pack(pady=5)
 
 # Start the GUI event loop
 root.mainloop()
+
+
+
+# C:\Users\pchuc\Documents\Splice\Samples\packs
+# C:\Users\pchuc\samples\splice\vocal
